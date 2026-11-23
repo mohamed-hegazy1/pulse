@@ -1,0 +1,10 @@
+export const categories=['Software','Services','Hardware'];
+export const channels=['Direct','Partner','Online'];
+export const records=Array.from({length:90},(_,i)=>{const d=new Date(Date.UTC(2026,0,1+i));return categories.map((category,k)=>({id:`${i}-${k}`,date:d.toISOString().slice(0,10),category,channel:channels[(i+k)%3],revenue:Math.round((28000+k*18000+(i%7)*2100+Math.sin(i/5+k)*11000)*(i>50?1.2:1)),cost:Math.round(16000+k*12000+(i%5)*1700),orders:8+k*3+i%9}));}).flat();
+export function selectRows({start='2026-01-01',end='2026-03-31',category='All',channel='All',query=''}={}){return records.filter(r=>r.date>=start&&r.date<=end&&(category==='All'||r.category===category)&&(channel==='All'||r.channel===channel)&&(r.category+' '+r.channel+' '+r.date).toLowerCase().includes(query.trim().toLowerCase()));}
+export function metrics(rows){const revenue=rows.reduce((s,r)=>s+r.revenue,0),cost=rows.reduce((s,r)=>s+r.cost,0),orders=rows.reduce((s,r)=>s+r.orders,0);return {revenue,cost,profit:revenue-cost,orders,margin:revenue?(revenue-cost)/revenue*100:0,aov:orders?revenue/orders:0};}
+export function trend(rows){const map=new Map();for(const r of rows){const key=r.date.slice(0,7);const x=map.get(key)||{label:key,revenue:0,cost:0};x.revenue+=r.revenue;x.cost+=r.cost;map.set(key,x)}return [...map.values()].sort((a,b)=>a.label.localeCompare(b.label));}
+export function breakdown(rows){return categories.map(label=>({label,...metrics(rows.filter(r=>r.category===label))}));}
+export function sortRows(rows,key='date',dir='desc'){return [...rows].sort((a,b)=>{const c=typeof a[key]==='number'?a[key]-b[key]:String(a[key]).localeCompare(String(b[key]));return dir==='asc'?c:-c})}
+export function csv(rows){const keys=['date','category','channel','revenue','cost','orders'];return ['# Synthetic educational data. Amounts are integer cents in fictional USD.',keys.join(','),...rows.map(r=>keys.map(k=>'"'+String(r[k]).replaceAll('"','""')+'"').join(','))].join('\r\n');}
+export const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n/100);
